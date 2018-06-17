@@ -1,0 +1,28 @@
+{
+  "name": "mfsst",
+  "version": "1.0.0",
+  "description": "Minimal Final-state Subsequential Transducer",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mitkosl/MFSST.git"
+  },
+  "keywords": [
+    "Minimal",
+    "Final-state",
+    "Subsequential",
+    "Transducer"
+  ],
+  "author": "mitkosl email:mitkosl@abv.bg",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mitkosl/MFSST/issues"
+  },
+  "homepage": "https://github.com/mitkosl/MFSST#readme",
+  "dependencies": {
+    "lazy": "^1.0.11"
+  }
+}
