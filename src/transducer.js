@@ -5,16 +5,13 @@ import { helpers } from './helpers';
 const State = require('./state');
 
 module.exports = class Transducer {
-    constructor(dictionary, MAX_WORD) {
+    constructor(dictionary) {
         this.inputAlphabet = new Set();
         this.inputWordsCount = 0;
         this.startState = new State();
         this.dictionaryOfStates = new Map();
         this.tempStates = [];
 
-        for (let i = 0; i < MAX_WORD; i++) {
-            this.tempStates.push(new State());
-        }
         this.tempStates[0].clear();
 
         this.previousWord = "";
@@ -31,13 +28,6 @@ module.exports = class Transducer {
         if (dictionary) {
             this.build(dictionary);
         }
-    }
-
-    findMinimizedState(state) {
-        if (this.dictionaryOfStates.has(state))
-            return this.dictionaryOfStates.get(state);
-        else
-            this.dictionaryOfStates.set(state, state);
     }
 
     stateCount() {
@@ -62,6 +52,13 @@ module.exports = class Transducer {
         console.log("number of transitions -> " + this.transitionsCount());
     }
 
+    findMinimizedState(state) {
+        if (this.dictionaryOfStates.has(state))
+            return this.dictionaryOfStates.get(state);
+        else
+            this.dictionaryOfStates.set(state, state);
+    }
+
     build(dictionary) {
         var startTime = new Date();
         this.inputWordsCount = dictionary.length;
@@ -71,11 +68,19 @@ module.exports = class Transducer {
             this.currentOutput = pair.output;
             console.log(this.currentWord + " : " + this.currentOutput);
 
+            if (this.currentWord < this.previousWord) {
+                console.log("Dictionary is not sorted please sort it and try again to build a transducer");
+            }
+
             for (const c of this.currentWord) {
                 this.inputAlphabet.add(c);
             }
 
             let prefixLengthPlus1 = helpers.commonPrefixLength(this.currentWord, this.previousWord);
+
+            while (this.tempStates.length <= this.currentWord.length) {
+                this.tempStates.push(new State());
+            }
 
             for (let i = this.previousWord.length; i > prefixLengthPlus1; i--) {
                 this.tempStates[i - 1].setTransition(this.findMinimizedState(this.tempStates[i]), this.previousWord[i])
