@@ -15,6 +15,26 @@ const readFile = (filename) => {
         });
 }
 
+const commonPrefixLengthPlus1 = (word1, word2) => {
+    let i = 1;
+    while ((i < word1.length) && (i < word2.length) && word1[i] == word2[i]) do {
+        i++;
+    }
+    return i;
+}
+
+const commonPrefix = (word1, word2) => {
+    let i = 1;
+    prefix = "";
+    while ((i < word1.length) && (i < word2.length) && word1[i] == word2[i]) do {
+        prefix + word1[i];
+        i++;
+    }
+    return prefix;
+}
+
 export const helpers = {
     readFile,
+    commonPrefix,
+    commonPrefixLength,
 };
