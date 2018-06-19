@@ -1,7 +1,6 @@
 'use strict';
 
-import { SSFST } from 'transducer.ts';
-import { helpers } from './helpers';
+const helpers = require('./helpers');
 const State = require('./state');
 
 module.exports = class Transducer {
@@ -12,7 +11,7 @@ module.exports = class Transducer {
         this.dictionaryOfStates = new Map();
         this.tempStates = [];
 
-        this.tempStates[0].clear();
+        // this.tempStates[0].clear();
 
         this.previousWord = "";
         this.currentWord = "";
@@ -23,15 +22,15 @@ module.exports = class Transducer {
 
         this.numberOfOutputStates = 0;
         this.numberOfTransitions = 0;
-        this.numberOfStates = 1;
 
         if (dictionary) {
             this.build(dictionary);
         }
+        console.log('constructor()');
     }
 
     stateCount() {
-        return this.numberOfStates;
+        return this.dictionaryOfStates.size;
     }
 
     transitionsCount() {
@@ -43,27 +42,38 @@ module.exports = class Transducer {
     }
 
     print() {
-        console.log("total number of words -> " + this.inputWordsCount);
-        let alphabet = '';
-        this.inputAlphabet.forEach(c => alphabet + " " + c)
-        console.log("Alphabet set -> { " + alphabet + " }");
+        console.log("\ntotal number of words -> " + this.inputWordsCount);
+        let alphabet = "";
+        this.inputAlphabet.forEach(c => alphabet += (c + ', '));
+        console.log("Alphabet set -> |{ " + alphabet + " }| = " + this.inputAlphabet.size);
         console.log("number of states -> " + this.stateCount());
         console.log("number of output states -> " + this.outputStatesCount());
         console.log("number of transitions -> " + this.transitionsCount());
+
+
+        this.dictionaryOfStates.forEach(state => console.log(state));
     }
 
     findMinimizedState(state) {
-        if (this.dictionaryOfStates.has(state))
-            return this.dictionaryOfStates.get(state);
-        else
-            this.dictionaryOfStates.set(state, state);
+        let s = null;
+        if (this.dictionaryOfStates.has(state)) {
+            s = this.dictionaryOfStates.get(state);
+        } else {
+            s = state.copy();
+            this.dictionaryOfStates.set(s, s);
+        }
+        return s;
     }
 
     build(dictionary) {
+        console.log('build()');
+        dictionary = dictionary.sort((a, b) => a.input > b.input);
+
         var startTime = new Date();
         this.inputWordsCount = dictionary.length;
 
         dictionary.forEach(pair => {
+
             this.currentWord = pair.input;
             this.currentOutput = pair.output;
             console.log(this.currentWord + " : " + this.currentOutput);
@@ -72,49 +82,63 @@ module.exports = class Transducer {
                 console.log("Dictionary is not sorted please sort it and try again to build a transducer");
             }
 
+            // add letters to the input alphabet set
             for (const c of this.currentWord) {
                 this.inputAlphabet.add(c);
             }
 
-            let prefixLengthPlus1 = helpers.commonPrefixLength(this.currentWord, this.previousWord);
+            let prefixLengthPlus1 = helpers.commonPrefixLengthPlus1(this.currentWord, this.previousWord);
 
+            // expand tempStates buffer to current word length
             while (this.tempStates.length <= this.currentWord.length) {
                 this.tempStates.push(new State());
             }
 
+
+            // set state transitions
             for (let i = this.previousWord.length; i > prefixLengthPlus1; i--) {
-                this.tempStates[i - 1].setTransition(this.findMinimizedState(this.tempStates[i]), this.previousWord[i])
+                this.tempStates[i - 1].setTransition(this.findMinimizedState(this.tempStates[i]), this.previousWord[i]);
+                this.numberOfTransitions++;
             }
 
-            for (let i = prefixLengthPlus1; i > this.currentWord.length; i++) {
+            for (let i = prefixLengthPlus1; i < this.currentWord.length; i++) {
                 this.tempStates[i].clear();
                 this.tempStates[i - 1].setTransition(this.tempStates[i], this.currentWord[i]);
+                this.numberOfTransitions++;
             }
 
             if (this.currentWord != this.previousWord) {
                 this.tempStates[this.currentWord.length].isFinal = true;
-                this.tempStates[this.currentWord.length].output = new Set([""]);
+                this.tempStates[this.currentWord.length].output = new Set([]);
+                this.numberOfOutputStates++;
             }
 
-            for (let j = 0; j < prefixLengthPlus1 - 1; j++) {
+            // set state outputs
+            for (let j = 1; j < prefixLengthPlus1 - 1; j++) {
+                // divide (j-1)th state's output to (common) prefix and suffix
                 let transition = this.tempStates[j - 1].getTransition(this.currentWord[j]);
                 this.commonPrefix = helpers.commonPrefix(transition.output, this.currentOutput);
                 this.wordSuffix = transition.output.substr(this.commonPrefix.length);
+                // re-set (j-1)'th state's output to prefix
                 transition.output = this.commonPrefix;
 
+                var wordSuff = this.wordSuffix;
+                // re-set j-th state's output to suffix or set final state outputk
                 this.inputAlphabet.forEach(char => {
                     let t = this.tempStates[j].getTransition(char);
-                    if (t.next != null);
-                    t.output = this.wordSuffix + t.output;
+                    if (t && t.next != null)
+                        t.output = wordSuff + t.output;
                 });
 
+                // set final state output if it's a final state
                 if (this.tempStates[j].isFinal) {
                     tempSet = new Set();
                     this.tempStates[j].output.forEach(out => {
-                        tempSet.push(this.wordSuffix + out);
+                        tempSet.add(this.wordSuffix + out);
                     });
                     this.tempStates[j].output = tempSet;
                 }
+                // update current output (subtract prefix)
                 this.currentOutput = this.currentOutput.substr(this.commonPrefix.length);
             }
 
@@ -123,14 +147,18 @@ module.exports = class Transducer {
             } else {
                 this.tempStates[prefixLengthPlus1 - 1].getTransition(this.currentWord[prefixLengthPlus1]).output = this.currentOutput;
             }
+            // preserve current word for next loop
             this.previousWord = this.currentWord;
         });
 
-        for (let p = this.currentWord.length; p >= 1; p--) {
+        //minimizing the states of the last word
+        for (let i = this.currentWord.length; i >= 1; i--) {
             this.tempStates[i - 1].setTransition(this.findMinimizedState(this.tempStates[i]), this.previousWord[i]);
+            this.numberOfTransitions++;
         }
         this.startState = this.findMinimizedState(this.tempStates[0]);
+
         var endTime = new Date();
-        console.log("building MFSST took: " + endTime - startTime + " milisecnds");
+        console.log("building MFSST took: " + (endTime - startTime) + " milisecnds");
     }
 };

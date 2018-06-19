@@ -1,30 +1,28 @@
 'use strict';
 
-import { helpers } from './src/helpers';
+const helpers = require('./src/helpers');
 const readline = require('readline');
 const Transducer = require('./index');
 
 
 function main() {
+    const dict = [
+        { input: 'apr', output: '30' },
+        { input: 'aug', output: '31' },
+        { input: 'dec', output: '31' },
+        { input: 'feb', output: '28' },
+        { input: 'feb', output: '29' },
+        { input: 'jan', output: '31' },
+        { input: 'jul', output: '31' },
+        { input: 'jun', output: '30' },
+    ];
 
-    const file = "./data/2k.dat";
-    const dict = helpers.readFile(file);
-    // const dict = [
-    //     { input: 'acheive', output: 'achieve' },
-    //     { input: 'arguement', output: 'argument' },
-    //     { input: 'independant', output: 'independent' },
-    //     { input: 'posession', output: 'possession' },
-    //     { input: 'mercy less', output: 'merciless' }
-    // ];
-
-    console.log(dict);
-    //const mfsst = new Transducer(dict);
-    //mfsst.print();
-
-    // readline.createInterface({
-    //     input: process.stdin,
-    //     output: process.stdout
-    // }).on('line', input => console.log(transducer.process(input)));
+    // const file = "./data/2k.dat";
+    // helpers.readFile(file)
+    // .then((dict) => {
+    const mfsst = new Transducer(dict);
+    mfsst.print();
+    // });
 };
 
 main();

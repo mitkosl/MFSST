@@ -11,7 +11,7 @@ declare module 'transducer' {
 
         print: () => void;
 
-        findMinimizedState: (state: State) => State;
+        findMinimizedState: (state: any) => any;
 
         build: (dictionary: Array<{ input: string, output: string }>) => void;
     }
