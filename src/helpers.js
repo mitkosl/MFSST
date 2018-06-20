@@ -30,8 +30,8 @@ async function readFile(filename) {
     return dict;
 }
 
-const commonPrefixLengthPlus1 = (word1, word2) => {
-    let i = 1;
+const commonPrefixLength = (word1, word2) => {
+    let i = 0;
     while ((i < word1.length) && (i < word2.length) && word1[i] == word2[i]) {
         i++;
     }
@@ -48,8 +48,13 @@ const commonPrefix = (word1, word2) => {
     return prefix;
 }
 
+const commonSuffix = (word1, word2) => {
+    return word1.substr(word2.length);
+}
+
 module.exports = {
     readFile,
     commonPrefix,
-    commonPrefixLengthPlus1
+    commonSuffix,
+    commonPrefixLength
 };

@@ -18,7 +18,7 @@ module.exports = class State {
     }
 
     setTransition(next, input, output = '') {
-        console.log('State #' + this.id + ' => new Transition(' + output + ', next #' + next.id + ')');
+        console.log('State #' + this.id + ' => new Transition(' + input + ':'+ output + ', next #' + next.id + ')');
         this.transitions.set(input, new Transition(output, next));
     }
 
