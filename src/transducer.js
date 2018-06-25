@@ -63,7 +63,7 @@ module.exports = class Transducer {
         console.log("number of transitions -> " + this.transitionsCount());
 
 
-        this.dictionaryOfStates.forEach(state => console.log(state));
+        this.dictionaryOfStates.forEach(state => state.print());
     }
 
     findMinimizedState(state) {
@@ -83,9 +83,9 @@ module.exports = class Transducer {
 
         var startTime = new Date();
         this.inputWordsCount = dictionary.length;
+        this.previousWord = "";
 
         dictionary.forEach(pair => {
-
             this.currentWord = pair.input;
             this.currentOutput = pair.output;
             console.log(this.currentWord + " : " + this.currentOutput);
@@ -106,22 +106,25 @@ module.exports = class Transducer {
                 this.tempStates.push(new State());
             }
 
-
+            console.log('----------------------------1----------------------------');
             // set state transitions
             for (let i = this.previousWord.length; i > prefixLength; i--) {
                 this.tempStates[i - 1].setTransition(this.findMinimizedState(this.tempStates[i]), this.previousWord[i - 1]);
             }
 
+            console.log('----------------------------2----------------------------');
             for (let i = prefixLength + 1; i <= this.currentWord.length; i++) {
                 this.tempStates[i].clear();
                 this.tempStates[i - 1].setTransition(this.tempStates[i], this.currentWord[i - 1]);
             }
 
+            console.log('----------------------------3----------------------------');
             if (this.currentWord != this.previousWord) {
                 this.tempStates[this.currentWord.length].isFinal = true;
                 this.tempStates[this.currentWord.length].output = new Set([]);
             }
 
+            console.log('----------------------------4----------------------------');
             // set state outputs
             for (let j = 1; j <= prefixLength; j++) {
                 // divide (j-1)th state's output to (common) prefix and suffix
@@ -131,6 +134,7 @@ module.exports = class Transducer {
                 // re-set (j-1)'th state's output to prefix
                 transition.output = this.commonPrefix;
 
+                console.log('----------------------------4.1----------------------------');
                 // re-set j-th state's output to suffix or set final state outputk
                 this.inputAlphabet.forEach(char => {
                     let t = this.tempStates[j].getTransition(char);
@@ -138,6 +142,7 @@ module.exports = class Transducer {
                         t.output = this.wordSuffix + t.output;
                 });
 
+                console.log('----------------------------4.2----------------------------');
                 // set final state output if it's a final state
                 if (this.tempStates[j].isFinal) {
                     let tempSet = new Set();
@@ -150,20 +155,29 @@ module.exports = class Transducer {
                 this.currentOutput = this.currentOutput.substr(this.commonPrefix.length);
             }
 
+            console.log('----------------------------5----------------------------');
+            console.log(`${this.currentWord} == ${this.previousWord}, pref=${prefixLength}`);
+
             if (this.currentWord == this.previousWord) {
+                console.log('.');
                 this.tempStates[this.currentWord.length].output.add(this.currentOutput);
             } else {
-                this.tempStates[prefixLength].getTransition(this.currentWord[prefixLength]).output = this.currentOutput;
+                console.log('....' + this.currentWord[prefixLength] + '   ' + this.currentOutput);
+                let transition = this.tempStates[prefixLength].getTransition(this.currentWord[prefixLength])
+                transition.output = this.currentOutput;
             }
+
             // preserve current word for next loop
             this.previousWord = this.currentWord;
         });
 
-        //minimizing the states of the last word
+        console.log('----------------------------6----------------------------');
+        // minimizing the states of the last word
         for (let i = this.currentWord.length; i >= 1; i--) {
-            this.tempStates[i - 1].setTransition(this.findMinimizedState(this.tempStates[i]), this.previousWord[i]);
-            this.numberOfTransitions++;
+            let newState = this.findMinimizedState(this.tempStates[i]);
+            this.tempStates[i - 1].setTransition(newState, this.previousWord[i - 1]);
         }
+        console.log('----------------------------7----------------------------');
         this.startState = this.findMinimizedState(this.tempStates[0]);
 
         var endTime = new Date();

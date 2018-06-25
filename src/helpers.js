@@ -39,10 +39,10 @@ const commonPrefixLength = (word1, word2) => {
 }
 
 const commonPrefix = (word1, word2) => {
-    let i = 1;
+    let i = 0;
     let prefix = "";
     while ((i < word1.length) && (i < word2.length) && word1[i] == word2[i]) {
-        prefix + word1[i];
+        prefix+= word1[i];
         i++;
     }
     return prefix;

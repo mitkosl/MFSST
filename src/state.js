@@ -2,7 +2,15 @@
 const Transition = require('./transition');
 
 const incr = (function () {
-    var i = 0;
+    var i = -1;
+
+    return function () {
+        return i++;
+    }
+})();
+
+const incrId = (function () { 0
+    var i = 100;
 
     return function () {
         return i++;
@@ -18,7 +26,10 @@ module.exports = class State {
     }
 
     setTransition(next, input, output = '') {
-        console.log('State #' + this.id + ' => new Transition(' + input + ':'+ output + ', next #' + next.id + ')');
+        console.log('State #' + this.id + ' => new Transition(' + input + ':' + output + ', next #' + next.id + ')');
+        let trans = this.transitions.get(input)
+        if (trans && trans.output && output == '')
+            output = trans.output;
         this.transitions.set(input, new Transition(output, next));
     }
 
@@ -27,8 +38,16 @@ module.exports = class State {
         return this.transitions.get(input);
     }
 
+    print() {
+        //console.log(this);
+        this.transitions.forEach((transition, input) => {
+            console.log(`#${this.id} => ${input}/${transition.output} => #${transition.next.id}`);
+        })
+    }
+
     copy() {
         let s = new State(this.isFinal);
+        s.id = incrId();
         console.log('Copy of State #' + this.id + ' into state # ' + s.id);
         this.transitions.forEach((val, key) => s.setTransition(val.next, key, val.output));
         this.output.forEach((val) => s.output.add(val));
