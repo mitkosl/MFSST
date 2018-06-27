@@ -9,7 +9,7 @@ const incr = (function () {
     }
 })();
 
-const incrId = (function () { 0
+const incrId = (function () {
     var i = 100;
 
     return function () {
@@ -25,6 +25,38 @@ module.exports = class State {
         this.transitions = new Map();
     }
 
+    serialize() {
+        let outputArr = [];
+        this.output.forEach(a => outputArr.push(a));
+
+        let transitionsArr = [];
+        this.transitions.forEach((trans, inp) => {
+            transitionsArr.push({
+                input: inp,
+                next: trans.next,
+                output: trans.output,
+            })
+        });
+
+        var state = {
+            id: this.id,
+            isFinal: this.isFinal,
+            output: outputArr,
+            transitions: transitionsArr,
+        }
+        return state;
+    }
+
+    deserialize(state) {
+        this.id = state.id;
+        this.isFinal = state.isFinal;
+        this.output = new Set(state.output);
+        this.transitions = new Map();
+        state.transitions.forEach(trans => {
+            this.transitions.set(trans.input, new Transition(trans.output, trans.next));
+        });
+    }
+
     setTransition(next, input, output = '') {
         console.log('State #' + this.id + ' => new Transition(' + input + ':' + output + ', next #' + next.id + ')');
         let trans = this.transitions.get(input)
@@ -38,6 +70,11 @@ module.exports = class State {
         return this.transitions.get(input);
     }
 
+    getOutput() {
+        let res = "";
+        this.output.forEach(el => res += el);
+        return res;
+    }
     print() {
         //console.log(this);
         this.transitions.forEach((transition, input) => {

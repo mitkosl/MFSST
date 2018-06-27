@@ -2,32 +2,55 @@
 
 const fs = require('fs');
 
+async function readWholeFile(filename = 'Transducer.dat') {
+    var obj = fs.readFileSync(filename, 'utf-8');
+    return obj;
+}
+
 async function readFile(filename) {
     let dict = [];
-    // var lines = require('fs').readFileSync(filename, 'utf-8')
-    // .split('\n');
-
-    // lines.forEach((line) => {
-    //     let inOut = line.split('\t');
-    //     if (!inOut[1])
-    //         dict.push({ input: inOut[0], output: '' });
-    //     else
-    //         dict.push({ input: inOut[0], output: inOut[1] });
-    // });
-    // return dict;
-
-    var lines = fs.readFileSync(filename, 'utf-8')
-        .split('\n');
+    var lines = fs.readFileSync(filename, 'utf-8').split('\n');
 
     lines.forEach(line => {
-        //console.log('Line from file:', line);
-        let inOut = line.split(/[ ,]+/);
+        let inOut = line.split(/[ ,\r]+/);
         if (!inOut[1])
             dict.push({ input: inOut[0], output: '' });
         else
             dict.push({ input: inOut[0], output: inOut[1] });
     });
     return dict;
+}
+
+async function writeFile(data ,filename = 'Transducer.dat') {
+    var lines = fs.writeFileSync(filename, data, 'utf-8');
+}
+
+async function readFileSingle(filename) {
+    let dict = [];
+    var lines = fs.readFileSync(filename, 'utf-8').split('\n');
+
+    lines.forEach(line => {
+        let input = line.split(/[ ,\r]+/);
+        dict.push(input[0])
+    });
+    return dict;
+}
+
+const checkFileAndCommand = (commands) => {
+    let fileName = null;
+    if (commands.length < 2) {
+        console.log("Enter 2 arguments:    [#] [filename.ext]");
+        return fileName;
+    }
+    if (fs.existsSync(commands[1]))
+        fileName = commands[1];
+
+    if (!fileName && fs.existsSync('data/' + commands[1]))
+        fileName = 'data/' + commands[1];
+
+    if (!fileName)
+        console.error("file " + commands[1] + " does not exist...");
+    return fileName;
 }
 
 const commonPrefixLength = (word1, word2) => {
@@ -52,9 +75,26 @@ const commonSuffix = (word1, word2) => {
     return word1.substr(word2.length);
 }
 
+const printMenu = () => {
+    console.log("_________________________Menu_______________________________");
+    console.log("1. Build new Transducer (from file)");
+    console.log("2. Load Transducer (from file)");
+    console.log("3. Print Transducer Information");
+    console.log("4. Transduce words from file:");
+    console.log("5. Add a word to the transducer");
+    console.log("6. Save Transducer to a file");
+    console.log("7. Menu");
+    console.log("8. Exit");
+}
+
 module.exports = {
     readFile,
+    readWholeFile,
+    readFileSingle,
+    writeFile,
     commonPrefix,
     commonSuffix,
-    commonPrefixLength
+    commonPrefixLength,
+    printMenu,
+    checkFileAndCommand
 };

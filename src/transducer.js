@@ -26,7 +26,37 @@ module.exports = class Transducer {
         if (dictionary) {
             this.build(dictionary);
         }
-        console.log('constructor()');
+    }
+
+    serialize() {
+        let inputAlphabetArr = [];
+        this.inputAlphabet.forEach(a => inputAlphabetArr.push(a));
+
+        let dictionaryOfStatesArr = [];
+        this.dictionaryOfStates.forEach(val => {
+            dictionaryOfStatesArr.push(val.serialize());
+        })
+
+        var transducer = {
+            inputWordsCount: this.inputWordsCount,
+            numberOfFinalStates: this.numberOfFinalStates,
+            numberOfTransitions: this.numberOfTransitions,
+            inputAlphabet: inputAlphabetArr,
+            dictionaryOfStates: dictionaryOfStatesArr,
+        }
+        return transducer
+    }
+
+    deserialize(transducer) {
+        this.inputWordsCount = transducer.inputWordsCount;
+        this.inputAlphabet = new Set(transducer.inputAlphabet);
+        this.dictionaryOfStates = new Map();
+        transducer.dictionaryOfStates.forEach(state => {
+            let s = new State();
+            s.deserialize(state);
+            this.dictionaryOfStates.set(s, s);
+        });
+        this.countAndSetValues();
     }
 
     stateCount() {
@@ -53,7 +83,29 @@ module.exports = class Transducer {
         this.numberOfTransitions = transitionsCount;
     }
 
-    print() {
+    lookup(words) {
+        words.forEach(word => {
+            let input = word;
+            let output = this.lookupWord(word);
+            console.log(`${input} => ${output}`);
+        });
+    }
+
+    lookupWord(word) {
+        let currentState = this.startState;
+        let result = "";
+        for (let i = 0; i < word.length; i++) {
+            let transition = currentState.getTransition(word[i]);
+            if (!transition)
+                return result;
+            result += transition.output;
+            currentState = transition.next;
+        }
+        result += currentState.getOutput();
+        return result;
+    }
+
+    print(debug) {
         console.log("\ntotal number of words -> " + this.inputWordsCount);
         let alphabet = "";
         this.inputAlphabet.forEach(c => alphabet += (c + ', '));
@@ -61,9 +113,8 @@ module.exports = class Transducer {
         console.log("number of states -> " + this.stateCount());
         console.log("number of output states -> " + this.outputStatesCount());
         console.log("number of transitions -> " + this.transitionsCount());
-
-
-        this.dictionaryOfStates.forEach(state => state.print());
+        if (debug)
+            this.dictionaryOfStates.forEach(state => state.print());
     }
 
     findMinimizedState(state) {
@@ -130,7 +181,7 @@ module.exports = class Transducer {
                 // divide (j-1)th state's output to (common) prefix and suffix
                 let transition = this.tempStates[j - 1].getTransition(this.currentWord[j - 1]);
                 this.commonPrefix = helpers.commonPrefix(transition.output, this.currentOutput);
-                this.wordSuffix = helpers.commonSuffix(transition.output, this.commonPrefix.length);
+                this.wordSuffix = helpers.commonSuffix(transition.output, this.commonPrefix);
                 // re-set (j-1)'th state's output to prefix
                 transition.output = this.commonPrefix;
 
