@@ -53,7 +53,7 @@ module.exports = class Transducer {
         this.dictionaryOfStates = new Map();
         transducer.dictionaryOfStates.forEach(state => {
             let s = new State();
-            s.deserialize(state);
+            s.deserialize(state, this.dictionaryOfStates);
             this.dictionaryOfStates.set(s, s);
         });
         this.countAndSetValues();
@@ -105,6 +105,40 @@ module.exports = class Transducer {
         return result;
     }
 
+    reduceToMinimalExceptPrefix(word) {
+        if (!helpers.isPrefix(word, this.previousWord) || this.previousWord == word)
+            return;
+
+        for (let i = this.previousWord.length; i > word.length; i--) {
+            //If no equivalent state in QminusT
+            let newState = this.findMinimizedState(this.tempStates[i]);
+            //Redirect transition
+            this.tempStates[i - 1].setTransition(newState, this.previousWord[i - 1]);
+            this.currentState = newState;
+        }
+        this.tempStates = [];
+        this.previousWord = word;
+    }
+
+    increaseToMinimalExceptPrefix(word) {
+        if (this.previousWord == word || !this.currentState) {
+            return;
+        }
+        let newState = null;
+        for (let i = this.previousWord.length; i < word.length; i++) {
+            //Ti WordI  copy of current Ti with word state
+            newState = this.currentState.copy();
+            this.tempStates.push(newState);
+            if (this.tempStates[i - 1])
+                this.tempStates[i - 1].setTransition(newState, word[i - 1]);
+            let nextState = this.currentState.next;
+            this.dictionaryOfStates.delete(this.currentState);
+            this.currentState = nextState;
+        }
+
+        this.previousWord = word;
+    }
+
     print(debug) {
         console.log("\ntotal number of words -> " + this.inputWordsCount);
         let alphabet = "";
@@ -136,7 +170,26 @@ module.exports = class Transducer {
         this.inputWordsCount = dictionary.length;
         this.previousWord = "";
 
-        dictionary.forEach(pair => {
+        dictionary.forEach(pair => this.addWord(pair));
+
+        console.log('----------------------------6----------------------------');
+        // minimizing the states of the last word
+        for (let i = this.currentWord.length; i >= 1; i--) {
+            let newState = this.findMinimizedState(this.tempStates[i]);
+            this.tempStates[i - 1].setTransition(newState, this.previousWord[i - 1]);
+        }
+        // this.reduceToMinimalExceptPrefix('');
+        console.log('----------------------------7----------------------------');
+        this.startState = this.findMinimizedState(this.tempStates[0]);
+        this.tempStates = [];
+
+        var endTime = new Date();
+        console.log("building MFSST took: " + (endTime - startTime) + " milisecnds");
+        this.countAndSetValues();
+    }
+
+    addWord(pair) {
+        {
             this.currentWord = pair.input;
             this.currentOutput = pair.output;
             console.log(this.currentWord + " : " + this.currentOutput);
@@ -220,19 +273,25 @@ module.exports = class Transducer {
 
             // preserve current word for next loop
             this.previousWord = this.currentWord;
+        }
+    }
+
+    addWords(dictionary) {
+        console.log('Reading Words');
+        dictionary = dictionary.sort((a, b) => a.input > b.input);
+
+        var startTime = new Date();
+        this.inputWordsCount = dictionary.length;
+        this.previousWord = "";
+
+        dictionary.forEach(pair => {
+            this.increaseToMinimalExceptPrefix(helpers.commonPrefix(pair.input, this.previousWord));
+            this.addWord(pair);
+            this.reduceToMinimalExceptPrefix('');
         });
 
-        console.log('----------------------------6----------------------------');
-        // minimizing the states of the last word
-        for (let i = this.currentWord.length; i >= 1; i--) {
-            let newState = this.findMinimizedState(this.tempStates[i]);
-            this.tempStates[i - 1].setTransition(newState, this.previousWord[i - 1]);
-        }
-        console.log('----------------------------7----------------------------');
-        this.startState = this.findMinimizedState(this.tempStates[0]);
-
         var endTime = new Date();
-        console.log("building MFSST took: " + (endTime - startTime) + " milisecnds");
+        console.log("Adding words to MFSST took: " + (endTime - startTime) + " milisecnds");
         this.countAndSetValues();
     }
 };

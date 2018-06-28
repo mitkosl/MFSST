@@ -47,13 +47,22 @@ module.exports = class State {
         return state;
     }
 
-    deserialize(state) {
+    deserialize(state, dictionaryOfStates) {
         this.id = state.id;
         this.isFinal = state.isFinal;
         this.output = new Set(state.output);
         this.transitions = new Map();
         state.transitions.forEach(trans => {
-            this.transitions.set(trans.input, new Transition(trans.output, trans.next));
+
+            var nextState = null;
+            dictionaryOfStates.forEach(st => {
+                if (st.id == trans.next.id)
+                    nextState = st;
+            });
+            if (nextState)
+                this.transitions.set(trans.input, new Transition(trans.output, nextState));
+            else
+                console.log(trans.next.id + "NOTFOUND..................");
         });
     }
 
@@ -75,6 +84,7 @@ module.exports = class State {
         this.output.forEach(el => res += el);
         return res;
     }
+    
     print() {
         //console.log(this);
         this.transitions.forEach((transition, input) => {

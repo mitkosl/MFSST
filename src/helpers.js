@@ -14,14 +14,20 @@ async function readFile(filename) {
     lines.forEach(line => {
         let inOut = line.split(/[ ,\r]+/);
         if (!inOut[1])
-            dict.push({ input: inOut[0], output: '' });
+            dict.push({
+                input: inOut[0],
+                output: ''
+            });
         else
-            dict.push({ input: inOut[0], output: inOut[1] });
+            dict.push({
+                input: inOut[0],
+                output: inOut[1]
+            });
     });
     return dict;
 }
 
-async function writeFile(data ,filename = 'Transducer.dat') {
+async function writeFile(data, filename = 'Transducer.dat') {
     var lines = fs.writeFileSync(filename, data, 'utf-8');
 }
 
@@ -65,10 +71,14 @@ const commonPrefix = (word1, word2) => {
     let i = 0;
     let prefix = "";
     while ((i < word1.length) && (i < word2.length) && word1[i] == word2[i]) {
-        prefix+= word1[i];
+        prefix += word1[i];
         i++;
     }
     return prefix;
+}
+
+const isPrefix = (prefix, word) => {
+    return commonPrefix(prefix, word) == prefix;
 }
 
 const commonSuffix = (word1, word2) => {
@@ -93,6 +103,7 @@ module.exports = {
     readFileSingle,
     writeFile,
     commonPrefix,
+    isPrefix,
     commonSuffix,
     commonPrefixLength,
     printMenu,
