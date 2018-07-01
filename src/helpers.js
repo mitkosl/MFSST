@@ -36,7 +36,7 @@ async function readFileSingle(filename) {
     var lines = fs.readFileSync(filename, 'utf-8').split('\n');
 
     lines.forEach(line => {
-        let inOut = line.split(/[ ,:\t\r]+/);
+        let input = line.split(/[ ,:\t\r]+/);
         dict.push(input[0])
     });
     return dict;
