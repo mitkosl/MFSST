@@ -5,7 +5,7 @@ const incr = (function () {
     var i = -1;
 
     return function () {
-        return i++;
+        return i += 1;
     }
 })();
 
@@ -13,7 +13,7 @@ const incrId = (function () {
     var i = 100;
 
     return function () {
-        return i++;
+        return i += 1;
     }
 })();
 
@@ -23,6 +23,20 @@ module.exports = class State {
         this.isFinal = isFinal;
         this.output = new Set(output);
         this.transitions = new Map();
+    }
+
+    hash() {
+        let hash = "";
+        if (this.isFinal) {
+            this.output.forEach(out => {
+                hash += out;
+            });
+        }
+
+        this.transitions.forEach((val, key) => {
+            hash += `${key}${val.output}${val.next.id}`
+        });
+        return hash.hashCode();
     }
 
     serialize() {
@@ -54,11 +68,11 @@ module.exports = class State {
         this.transitions = new Map();
         state.transitions.forEach(trans => {
 
-            var nextState = null;
-            dictionaryOfStates.forEach(st => {
-                if (st.id == trans.next.id)
-                    nextState = st;
-            });
+            var nextState = dictionaryOfStates.get(state.next.hash());
+            // dictionaryOfStates.forEach(st => {
+            //     if (st.id == trans.next.id)
+            //         nextState = st;
+            // });
             if (nextState)
                 this.transitions.set(trans.input, new Transition(trans.output, nextState));
             else
@@ -67,7 +81,7 @@ module.exports = class State {
     }
 
     setTransition(next, input, output = '') {
-        console.log('State #' + this.id + ' => new Transition(' + input + ':' + output + ', next #' + next.id + ')');
+        //console.log('State #' + this.id + ' => new Transition(' + input + ':' + output + ', next #' + next.id + ')');
         let trans = this.transitions.get(input)
         if (trans && trans.output && output == '')
             output = trans.output;
@@ -84,7 +98,7 @@ module.exports = class State {
         this.output.forEach(el => res += el);
         return res;
     }
-    
+
     print() {
         //console.log(this);
         this.transitions.forEach((transition, input) => {
@@ -95,7 +109,7 @@ module.exports = class State {
     copy() {
         let s = new State(this.isFinal);
         s.id = incrId();
-        console.log('Copy of State #' + this.id + ' into state # ' + s.id);
+        //console.log('Copy of State #' + this.id + ' into state # ' + s.id);
         this.transitions.forEach((val, key) => s.setTransition(val.next, key, val.output));
         this.output.forEach((val) => s.output.add(val));
         return s;

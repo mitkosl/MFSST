@@ -12,7 +12,7 @@ async function readFile(filename) {
     var lines = fs.readFileSync(filename, 'utf-8').split('\n');
 
     lines.forEach(line => {
-        let inOut = line.split(/[ ,\r]+/);
+        let inOut = line.split(/[ ,\t\r]+/);
         if (!inOut[1])
             dict.push({
                 input: inOut[0],
@@ -36,7 +36,7 @@ async function readFileSingle(filename) {
     var lines = fs.readFileSync(filename, 'utf-8').split('\n');
 
     lines.forEach(line => {
-        let input = line.split(/[ ,\r]+/);
+        let inOut = line.split(/[ ,:\t\r]+/);
         dict.push(input[0])
     });
     return dict;
@@ -62,7 +62,7 @@ const checkFileAndCommand = (commands) => {
 const commonPrefixLength = (word1, word2) => {
     let i = 0;
     while ((i < word1.length) && (i < word2.length) && word1[i] == word2[i]) {
-        i++;
+        i+=1;
     }
     return i;
 }
@@ -72,7 +72,7 @@ const commonPrefix = (word1, word2) => {
     let prefix = "";
     while ((i < word1.length) && (i < word2.length) && word1[i] == word2[i]) {
         prefix += word1[i];
-        i++;
+        i+=1
     }
     return prefix;
 }
@@ -95,6 +95,19 @@ const printMenu = () => {
     console.log("6. Save Transducer to a file");
     console.log("7. Menu");
     console.log("8. Exit");
+}
+
+String.prototype.hashCode = function() {
+    var hash = 0;
+    if (this.length == 0) {
+        return hash;
+    }
+    for (var i = 0; i < this.length; i+=1) {
+        var char = this.charCodeAt(i);
+        hash = ((hash<<5)-hash)+char;
+        hash = hash & hash; // Convert to 32bit integer
+    }
+    return hash;
 }
 
 module.exports = {
