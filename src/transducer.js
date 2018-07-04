@@ -97,46 +97,54 @@ module.exports = class Transducer {
         for (let i = 0; i < word.length; i += 1) {
             let transition = currentState.getTransition(word[i]);
             if (!transition)
-                return result;
+                return "";
             result += transition.output;
             currentState = transition.next;
         }
-        result += currentState.getOutput();
-        return result;
+        if (currentState.isFinal) {
+            result += currentState.getOutput();
+            return result;
+        } else {
+            return "";
+        }
     }
 
     reduceToMinimalExceptPrefix(word) {
         if (!helpers.isPrefix(word, this.previousWord) || this.previousWord == word)
             return;
 
-        for (let i = this.previousWord.length; i > word.length; i -= 1) {
+        for (let i = this.previousWord.length; i >= 1; i -= 1) {
             //If no equivalent state in QminusT
             let newState = this.findMinimizedState(this.tempStates[i]);
-            //Redirect transition
             this.tempStates[i - 1].setTransition(newState, this.previousWord[i - 1]);
-            this.currentState = newState;
         }
+        this.startState = this.findMinimizedState(this.tempStates[0]);
         this.tempStates = [];
         this.previousWord = word;
     }
 
     increaseToMinimalExceptPrefix(word) {
-        if (this.previousWord == word || !this.currentState) {
+        let currentState = this.startState;
+        if (this.previousWord == word || !currentState) {
             return;
         }
         let newState = null;
-        for (let i = this.previousWord.length; i < word.length; i += 1) {
+        let i;
+        for (i = this.previousWord.length; i < word.length; i += 1) {
             //Ti WordI  copy of current Ti with word state
-            newState = this.currentState.copy();
+            newState = currentState.copy();
             this.tempStates.push(newState);
             if (this.tempStates[i - 1])
                 this.tempStates[i - 1].setTransition(newState, word[i - 1]);
-            let nextState = this.currentState.next;
-            this.dictionaryOfStates.delete(this.currentState);
-            this.currentState = nextState;
-        }
 
-        this.previousWord = word;
+            let trans = currentState.getTransition(word[i])
+            this.dictionaryOfStates.delete(currentState.hash());
+            if (trans && trans.next) {
+                currentState = trans.next;
+            } else
+                break;
+        }
+        this.previousWord = word.substr(0, i);
     }
 
     print(debug) {
@@ -165,6 +173,10 @@ module.exports = class Transducer {
     build(dictionary) {
         console.log('Build()');
         //dictionary = dictionary.sort((a, b) => a.input.localeCompare(b.input));
+        this.inputAlphabet = new Set();
+        this.inputWordsCount = 0;
+        this.tempStates = [];
+        this.dictionaryOfStates = new Map();
 
         var startTime = new Date();
         this.inputWordsCount = dictionary.length;
@@ -198,7 +210,7 @@ module.exports = class Transducer {
     addWord(pair) {
         this.currentWord = pair.input;
         this.currentOutput = pair.output;
-    //console.log(this.currentWord + " : " + this.currentOutput);
+        //console.log(this.currentWord + " : " + this.currentOutput);
 
         // if (this.currentWord.localeCompare(this.previousWord) < 0) {
         //     console.log("Dictionary is not sorted please sort it and try again to build a transducer");
@@ -287,14 +299,16 @@ module.exports = class Transducer {
 
     addWords(dictionary) {
         console.log('Reading Words');
+        this.tempStates = [];
         //dictionary = dictionary.sort((a, b) => a.input > b.input);
 
         var startTime = new Date();
-        this.inputWordsCount = dictionary.length;
+        this.inputWordsCount += dictionary.length;
         this.previousWord = "";
 
         dictionary.forEach(pair => {
-            this.increaseToMinimalExceptPrefix(helpers.commonPrefix(pair.input, this.previousWord));
+            //helpers.commonPrefix(pair.input, this.previousWord)
+            this.increaseToMinimalExceptPrefix(pair.input);
             this.addWord(pair);
             this.reduceToMinimalExceptPrefix('');
         });

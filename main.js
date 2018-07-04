@@ -8,7 +8,7 @@ var transducer = new Transducer();
 
 function main() {
     const dict = [{
-            input: 'april',
+            input: 'apr',
             output: '30'
         },
         {
@@ -30,8 +30,10 @@ function main() {
         {
             input: 'jan',
             output: '31'
-        },
-        {
+        }
+    ];
+
+    const dict2 = [{
             input: 'jul',
             output: '31'
         },
@@ -39,7 +41,7 @@ function main() {
             input: 'jun',
             output: '30'
         },
-    ];
+    ]
 
     // var transducer = new Transducer();
 
