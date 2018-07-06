@@ -21,6 +21,7 @@ module.exports = class State {
     constructor(isFinal = false, output = []) {
         this.id = incr();
         this.isFinal = isFinal;
+        this.numberOfInputs = 0;
         this.output = new Set(output);
         this.transitions = new Map();
     }
@@ -55,6 +56,7 @@ module.exports = class State {
         var state = {
             id: this.id,
             isFinal: this.isFinal,
+            numberOfInputs: this.numberOfInputs,
             output: outputArr,
             transitions: transitionsArr,
         }
@@ -64,6 +66,7 @@ module.exports = class State {
     deserialize(state, dictionaryOfStates) {
         this.id = state.id;
         this.isFinal = state.isFinal;
+        this.numberOfInputs = state.numberOfInputs
         this.output = new Set(state.output);
         this.transitions = new Map();
         state.transitions.forEach(trans => {
@@ -86,6 +89,7 @@ module.exports = class State {
         if (trans && trans.output && output == '')
             output = trans.output;
         this.transitions.set(input, new Transition(output, next));
+        next.numberOfInputs += 1;
     }
 
     //returns {next, output}
@@ -117,6 +121,7 @@ module.exports = class State {
 
     clear() {
         this.isFinal = false;
+        this.numberOfInputs = 0;
         this.output.clear();
         this.transitions.clear();
     }

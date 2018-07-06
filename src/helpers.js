@@ -91,10 +91,11 @@ const printMenu = () => {
     console.log("2. Load Transducer (from file)");
     console.log("3. Print Transducer Information");
     console.log("4. Transduce words from file:");
-    console.log("5. Add a word to the transducer");
+    console.log("5. Add words to the transducer (from file)");
     console.log("6. Save Transducer to a file");
-    console.log("7. Menu");
-    console.log("8. Exit");
+    console.log("7. Delete words from the transducer (file)");
+    console.log("8. Menu");
+    console.log("9. Exit");
 }
 
 String.prototype.hashCode = function() {

@@ -10,6 +10,7 @@ module.exports = class Transducer {
         this.startState = new State();
         this.dictionaryOfStates = new Map();
         this.tempStates = [];
+        this.deletedWords = new Set();
 
         // this.tempStates[0].clear();
 
@@ -92,8 +93,17 @@ module.exports = class Transducer {
     }
 
     lookupWord(word) {
-        let currentState = this.startState;
         let result = "";
+        var deletedWordFoind = false;
+        this.deletedWords.forEach((pair) => {
+            if (pair.input == word) {
+                deletedWordFoind = true;
+                return;
+            }
+        });
+        if (deletedWordFoind)
+            return result;
+        let currentState = this.startState;
         for (let i = 0; i < word.length; i += 1) {
             let transition = currentState.getTransition(word[i]);
             if (!transition)
@@ -137,7 +147,7 @@ module.exports = class Transducer {
             if (this.tempStates[i - 1])
                 this.tempStates[i - 1].setTransition(newState, word[i - 1]);
 
-            let trans = currentState.getTransition(word[i])
+            let trans = currentState.getTransition(word[i]);
             this.dictionaryOfStates.delete(currentState.hash());
             if (trans && trans.next) {
                 currentState = trans.next;
@@ -307,6 +317,8 @@ module.exports = class Transducer {
         this.previousWord = "";
 
         dictionary.forEach(pair => {
+            if (this.deletedWords.has(pair))
+                this.deletedWords.delete(pair);
             //helpers.commonPrefix(pair.input, this.previousWord)
             this.increaseToMinimalExceptPrefix(pair.input);
             this.addWord(pair);
@@ -315,6 +327,139 @@ module.exports = class Transducer {
 
         var endTime = new Date();
         console.log("Adding words to MFSST took: " + (endTime - startTime) + " milisecnds");
+        this.countAndSetValues();
+    }
+
+    deleteWord(pair) {
+        this.currentWord = pair.input;
+        this.currentOutput = pair.output;
+
+        let currentState = this.tempStates[0];
+        let output = "";
+        for (let i = 0; i < word.length; i += 1) {
+            let transition = currentState.getTransition(word[i]);
+            if (!transition && currentState.isFinal)
+                return; // the word is not in the dicctinary skip it
+            output += transition.output;
+            currentState = transition.next;
+        }
+        if (currentState.isFinal) {
+            output += currentState.getOutput();
+            if (this.currentOutput == output) {
+                let newState = currentState.copy();
+                newState.isFinal = false;
+                // delete it if no inputtransitions
+            }
+        } else {
+            return; // the word is not in the dicctinary skip it
+        }
+
+        if (this.previousWord == this.currentWord)
+            //console.log(this.currentWord + " : " + this.currentOutput);
+
+            // if (this.currentWord.localeCompare(this.previousWord) < 0) {
+            //     console.log("Dictionary is not sorted please sort it and try again to build a transducer");
+            // }
+
+            // add letters to the input alphabet set
+            for (const c of this.currentWord) {
+                this.inputAlphabet.add(c);
+            }
+
+        let prefixLength = helpers.commonPrefixLength(this.currentWord, this.previousWord);
+
+        // expand tempStates buffer to current word length
+        while (this.tempStates.length <= this.currentWord.length) {
+            this.tempStates.push(new State());
+        }
+
+        //console.log('----------------------------1----------------------------');
+        // set state transitions
+        for (let i = this.previousWord.length; i > prefixLength; i -= 1) {
+            this.tempStates[i - 1].setTransition(this.findMinimizedState(this.tempStates[i]), this.previousWord[i - 1]);
+        }
+
+        // console.log('----------------------------2----------------------------');
+        for (let i = prefixLength + 1; i <= this.currentWord.length; i += 1) {
+            this.tempStates[i].clear();
+            this.tempStates[i - 1].setTransition(this.tempStates[i], this.currentWord[i - 1]);
+        }
+
+
+        // console.log('----------------------------3----------------------------');
+        if (this.currentWord != this.previousWord) {
+            this.tempStates[this.currentWord.length].isFinal = true;
+            this.tempStates[this.currentWord.length].output = new Set([]);
+        }
+        // console.log('----------------------------4----------------------------');
+        // set state outputs
+        for (let j = 1; j <= prefixLength; j += 1) {
+            // divide (j-1)th state's output to (common) prefix and suffix
+            let transition = this.tempStates[j - 1].getTransition(this.currentWord[j - 1]);
+            this.commonPrefix = helpers.commonPrefix(transition.output, this.currentOutput);
+            this.wordSuffix = helpers.commonSuffix(transition.output, this.commonPrefix);
+            // re-set (j-1)'th state's output to prefix
+            transition.output = this.commonPrefix;
+
+            // console.log('----------------------------4.1----------------------------');
+            // re-set j-th state's output to suffix or set final state outputk
+            // this.inputAlphabet.forEach(char => {
+            //     let t = this.tempStates[j].getTransition(char);
+            //     if (t && t.next != null)
+            //         t.output = this.wordSuffix + t.output;
+            // });
+
+            this.tempStates[j].transitions.forEach((t, char) => {
+                if (t.next != null)
+                    t.output = this.wordSuffix + t.output;
+            })
+
+            // console.log('----------------------------4.2----------------------------');
+            // set final state output if it's a final state
+            if (this.tempStates[j].isFinal) {
+                let tempSet = new Set();
+                this.tempStates[j].output.forEach(out => {
+                    tempSet.add(this.wordSuffix + out);
+                });
+                this.tempStates[j].output = tempSet;
+            }
+            // update current output (subtract prefix)
+            this.currentOutput = this.currentOutput.substr(this.commonPrefix.length);
+        }
+
+        // console.log('----------------------------5----------------------------');
+        // console.log(`${this.currentWord} == ${this.previousWord}, pref=${prefixLength}`);
+        if (this.currentWord == this.previousWord) {
+            // console.log('.');
+            this.tempStates[this.currentWord.length].output.add(this.currentOutput);
+        } else {
+            // console.log('....' + this.currentWord[prefixLength] + '   ' + this.currentOutput);
+            let transition = this.tempStates[prefixLength].getTransition(this.currentWord[prefixLength]);
+            transition.output = this.currentOutput;
+        }
+
+        // preserve current word for next loop
+        this.previousWord = this.currentWord;
+    }
+
+    deleteWords(dictionary) {
+        console.log('Deleting Words');
+        this.tempStates = [];
+
+        var startTime = new Date();
+        this.inputWordsCount -= dictionary.length;
+        this.previousWord = "";
+
+        dictionary.forEach(pair => {
+            this.deletedWords.add(pair);
+            // //helpers.commonPrefix(pair.input, this.previousWord)
+            // this.increaseToMinimalExceptPrefix(pair.input);
+            // this.deleteWord(pair);
+            // this.reduceToMinimalExceptPrefix('');
+        });
+
+        var endTime = new Date();
+        console.log("Deleting words from MFSST took: " + (endTime - startTime) + " milisecnds");
         this.countAndSetValues();
     }
 };

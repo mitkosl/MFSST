@@ -81,12 +81,11 @@ function main() {
     // console.log("2. Load Transducer (from file)");
     // console.log("3. Print Transducer Information");
     // console.log("4. Transduce words from file:");
-    // console.log("5. Add a word to the transducer");
+    // console.log("5. Add words to the transducer (from file)");
     // console.log("6. Save Transducer to a file");
-    // console.log("7. Menu");
-    // console.log("8. Exit");
-
-
+    // console.log("7. Delete words from the transducer (file)");
+    // console.log("8. Menu");
+    // console.log("9. Exit");
 
     helpers.printMenu();
 
@@ -104,7 +103,7 @@ function processCommands(d) {
     let command = d.toString().trim().toLowerCase();
     let commands = command.split(/[ ,]+/);
 
-    if (command == 'exit' || command == 8)
+    if (command == 'exit' || command == 9)
         process.exit();
     if (command == 'clear' || command == 'cls')
         console.clear();
@@ -123,7 +122,7 @@ function processCommands(d) {
                 });
             }
             break;
-            // Load Transducer (from file)
+        // Load Transducer (from file)
         case '2':
             {
                 let filename = helpers.checkFileAndCommand(commands);
@@ -137,14 +136,14 @@ function processCommands(d) {
                 });
             }
             break;
-            // Print Transducer Information
+        // Print Transducer Information
         case '3':
             if (commands.length > 1)
                 transducer.print(true);
             else
                 transducer.print();
             break;
-            // Transduce words from file
+        // Transduce words from file
         case '4':
             {
                 let filename = helpers.checkFileAndCommand(commands);
@@ -158,7 +157,7 @@ function processCommands(d) {
                 });
             }
             break;
-            // Add a word to the transducer
+        // Add words to the transducer
         case '5':
             {
                 let filename = helpers.checkFileAndCommand(commands);
@@ -171,7 +170,7 @@ function processCommands(d) {
                 });
             }
             break;
-            // Save Transducer to a file
+        // Save Transducer to a file
         case '6':
             {
                 if (commands.length < 2) {
@@ -183,8 +182,22 @@ function processCommands(d) {
                 }
             }
             break;
-            // Menu
-        case '7':
+        // Delete words form transducer
+        case '7': 
+            {
+                let filename = helpers.checkFileAndCommand(commands);
+                if (!filename)
+                    break;
+                console.log("reading words to delete from " + filename);
+                helpers.readFile(filename)
+                .then(dict => {
+                    console.log("read the file ");
+                    transducer.deleteWords(dict);
+                });
+            }
+            break;
+        // Menu
+        case '8':
         default:
             helpers.printMenu();
     }
