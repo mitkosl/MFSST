@@ -27,17 +27,18 @@ module.exports = class State {
     }
 
     hash() {
-        let hash = "";
+        let hash = this.isFinal ? 'true' : 'true';
         if (this.isFinal) {
             this.output.forEach(out => {
-                hash += out;
+                hash += ('/' + out);
             });
         }
 
         this.transitions.forEach((val, key) => {
-            hash += `${key}${val.output}${val.next.id}`
+            hash += `+${key}-${val.output}-${val.next.id}-`;
         });
-        return hash.hashCode();
+        //return hash.hashCode();
+        return hash;
     }
 
     serialize() {
@@ -105,14 +106,19 @@ module.exports = class State {
 
     print() {
         //console.log(this);
+        var res = "";
         this.transitions.forEach((transition, input) => {
-            console.log(`#${this.id} => ${input}/${transition.output} => #${transition.next.id}`);
-        })
+            let transitionOutput = transition.output;
+            let trOut = transitionOutput ? ':' + transitionOutput : '';
+            res += `${this.id} -> ${transition.next.id} [label="${input}${trOut}"]\n`;
+        });
+        return res;
     }
 
     copy() {
         let s = new State(this.isFinal);
-        s.id = incrId();
+        // s.id = incrId();
+        s.id = this.id;
         //console.log('Copy of State #' + this.id + ' into state # ' + s.id);
         this.transitions.forEach((val, key) => s.setTransition(val.next, key, val.output));
         this.output.forEach((val) => s.output.add(val));
@@ -120,6 +126,7 @@ module.exports = class State {
     }
 
     clear() {
+        this.id = incrId();
         this.isFinal = false;
         this.numberOfInputs = 0;
         this.output.clear();

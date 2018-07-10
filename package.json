@@ -4,6 +4,7 @@
   "description": "Minimal Final-state Subsequential Transducer",
   "scripts": {
     "start": "node --max-old-space-size=4096 main",
+    "plot": "http-server",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -26,7 +27,9 @@
   },
   "homepage": "https://github.com/mitkosl/MFSST#readme",
   "dependencies": {
+    "d3-graphviz": "^2.4.1",
     "fs": "0.0.1-security",
+    "http-server": "^0.11.1",
     "lazy": "^1.0.11"
   }
 }

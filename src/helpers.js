@@ -96,6 +96,8 @@ const printMenu = () => {
     console.log("7. Delete words from the transducer (file)");
     console.log("8. Menu");
     console.log("9. Exit");
+    console.log("10 Plot");
+    console.log("11 Print Trasducer Language");
 }
 
 String.prototype.hashCode = function() {
