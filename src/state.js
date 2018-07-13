@@ -21,13 +21,13 @@ module.exports = class State {
     constructor(isFinal = false, output = []) {
         this.id = incr();
         this.isFinal = isFinal;
-        this.numberOfInputs = 0;
+        this.inputLetters = new Set();
         this.output = new Set(output);
         this.transitions = new Map();
     }
 
     hash() {
-        let hash = this.isFinal ? 'true' : 'true';
+        let hash = this.isFinal ? '1' : '0';
         if (this.isFinal) {
             this.output.forEach(out => {
                 hash += ('/' + out);
@@ -43,7 +43,9 @@ module.exports = class State {
 
     serialize() {
         let outputArr = [];
+        let inputLetters = [];
         this.output.forEach(a => outputArr.push(a));
+        this.inputLetters.forEach(a => inputLetters.push(a));
 
         let transitionsArr = [];
         this.transitions.forEach((trans, inp) => {
@@ -57,7 +59,7 @@ module.exports = class State {
         var state = {
             id: this.id,
             isFinal: this.isFinal,
-            numberOfInputs: this.numberOfInputs,
+            inputLetters: inputLetters,
             output: outputArr,
             transitions: transitionsArr,
         }
@@ -67,8 +69,8 @@ module.exports = class State {
     deserialize(state, dictionaryOfStates) {
         this.id = state.id;
         this.isFinal = state.isFinal;
-        this.numberOfInputs = state.numberOfInputs
         this.output = new Set(state.output);
+        this.inputLetters = new Set(state.inputLetters);
         this.transitions = new Map();
         state.transitions.forEach(trans => {
 
@@ -84,13 +86,13 @@ module.exports = class State {
         });
     }
 
-    setTransition(next, input, output = '') {
+    setTransition(next, input, output = 0) {
         //console.log('State #' + this.id + ' => new Transition(' + input + ':' + output + ', next #' + next.id + ')');
         let trans = this.transitions.get(input)
-        if (trans && trans.output && output == '')
+        if (trans && trans.output && output == 0)
             output = trans.output;
+        next.inputLetters.add(input);
         this.transitions.set(input, new Transition(output, next));
-        next.numberOfInputs += 1;
     }
 
     //returns {next, output}
@@ -98,9 +100,19 @@ module.exports = class State {
         return this.transitions.get(input);
     }
 
+    getNumberOfInputs() {
+        return this.inputLetters.size;
+    }
+
+    removeTransition(input) {
+        this.transitions.delete(input);
+    }
+
     getOutput() {
-        let res = "";
-        this.output.forEach(el => res += el);
+        let res = 0;
+        this.output.forEach(el => res += parseInt(el));
+        if (isNaN(parseInt(res)))
+            this.output.forEach(el => console.log(el));
         return res;
     }
 
@@ -115,21 +127,23 @@ module.exports = class State {
         return res;
     }
 
-    copy() {
+    copy(cloneNewId = false) {
         let s = new State(this.isFinal);
         // s.id = incrId();
-        s.id = this.id;
-        //console.log('Copy of State #' + this.id + ' into state # ' + s.id);
+        if (!cloneNewId)
+            s.id = this.id;
+        // console.log('Copy of State #' + this.id + ' into state # ' + s.id, this.isFinal, s.isFinal);
         this.transitions.forEach((val, key) => s.setTransition(val.next, key, val.output));
         this.output.forEach((val) => s.output.add(val));
+        this.inputLetters.forEach((val) => s.inputLetters.add(val));
         return s;
     }
 
     clear() {
         this.id = incrId();
         this.isFinal = false;
-        this.numberOfInputs = 0;
         this.output.clear();
+        this.inputLetters.clear();
         this.transitions.clear();
     }
 };

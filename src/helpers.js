@@ -62,19 +62,20 @@ const checkFileAndCommand = (commands) => {
 const commonPrefixLength = (word1, word2) => {
     let i = 0;
     while ((i < word1.length) && (i < word2.length) && word1[i] == word2[i]) {
-        i+=1;
+        i += 1;
     }
     return i;
 }
 
 const commonPrefix = (word1, word2) => {
-    let i = 0;
-    let prefix = "";
-    while ((i < word1.length) && (i < word2.length) && word1[i] == word2[i]) {
-        prefix += word1[i];
-        i+=1
-    }
-    return prefix;
+    return Math.min(parseInt(word1), parseInt(word2));
+    // let i = 0;
+    // let prefix = "";
+    // while ((i < word1.length) && (i < word2.length) && word1[i] == word2[i]) {
+    //     prefix += word1[i];
+    //     i += 1
+    // }
+    // return prefix;
 }
 
 const isPrefix = (prefix, word) => {
@@ -82,7 +83,8 @@ const isPrefix = (prefix, word) => {
 }
 
 const commonSuffix = (word1, word2) => {
-    return word1.substr(word2.length);
+    return parseInt(word2) - parseInt(word1);
+    // return word1.substr(word2.length);
 }
 
 const printMenu = () => {
@@ -100,14 +102,14 @@ const printMenu = () => {
     console.log("11 Print Trasducer Language");
 }
 
-String.prototype.hashCode = function() {
+String.prototype.hashCode = function () {
     var hash = 0;
     if (this.length == 0) {
         return hash;
     }
-    for (var i = 0; i < this.length; i+=1) {
+    for (var i = 0; i < this.length; i += 1) {
         var char = this.charCodeAt(i);
-        hash = ((hash<<5)-hash)+char;
+        hash = ((hash << 5) - hash) + char;
         hash = hash & hash; // Convert to 32bit integer
     }
     return hash;
