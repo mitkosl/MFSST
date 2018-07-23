@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Minimal Final-state Subsequential Transducer",
   "scripts": {
-    "start": "node --max-old-space-size=4096 main",
+    "start": "node --max-old-space-size=8192 main",
     "plot": "http-server",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

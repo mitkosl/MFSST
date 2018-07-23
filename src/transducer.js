@@ -243,6 +243,7 @@ module.exports = class Transducer {
         this.inputWordsCount = 0;
         this.tempStates = [];
         this.dictionaryOfStates = new Map();
+        let counter = 0;
 
         var startTime = new Date();
         this.inputWordsCount = dictionary.length;
@@ -255,6 +256,9 @@ module.exports = class Transducer {
         dictionary.forEach(pair => {
             if (pair.input || pair.output)
                 this.addWord(pair)
+            counter += 1;
+            if ((counter % 5000) == 0)
+                console.log(counter);
         });
 
         //console.log('----------------------------6----------------------------');
@@ -385,11 +389,15 @@ module.exports = class Transducer {
         var startTime = new Date();
         this.inputWordsCount += dictionary.length;
         this.previousWord = "";
+        let counter = 0;
 
         dictionary.forEach(pair => {
             this.increaseToMinimalExceptPrefix(pair.input);
             this.addWord(pair);
             this.reduceToMinimalExceptEpsilon();
+            counter += 1;
+            if ((counter % 1000) == 0)
+                console.log(counter);
         });
 
         var endTime = new Date();
@@ -424,12 +432,16 @@ module.exports = class Transducer {
         var startTime = new Date();
         this.inputWordsCount -= dictionary.length;
         this.previousWord = "";
+        let counter = 0;
 
         dictionary.forEach(pair => {
             // //helpers.commonPrefix(pair.input, this.previousWord)
             this.increaseToMinimalExceptPrefix(pair.input);
             this.deleteWord(pair);
             this.reduceToMinimalExceptEpsilon();
+            counter += 1;
+            if ((counter % 1000) == 0)
+                console.log(counter);
         });
 
         var endTime = new Date();
