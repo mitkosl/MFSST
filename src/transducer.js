@@ -103,6 +103,7 @@ module.exports = class Transducer {
             let transition = currentState.getTransition(word[i]);
             if (!transition) {
                 console.log("there is no transition from " + currentState.id + " with " + word[i] + ' ' + word);
+                console.log(currentState.print());
                 return 0;
             }
             result += parseInt(transition.output);
@@ -124,8 +125,7 @@ module.exports = class Transducer {
         for (let i = this.previousWord.length; i >= 1; i -= 1) {
             //If no equivalent state in QminusT
             let newState = this.findMinimizedState(this.tempStates[i]);
-            this.tempStates[i - 1].setTransition(newState, this.previousWord[i - 1], 0);
-            newState.inputLetters.add(this.previousWord[i - 1]);
+            this.tempStates[i - 1].setTransition(this.dictionaryOfStates, newState, this.previousWord[i - 1], 0);
         }
         this.startState = this.findMinimizedState(this.tempStates[0]);
         this.tempStates = [];
@@ -139,8 +139,7 @@ module.exports = class Transducer {
         for (let i = this.tempStates.length - 1; i >= 1; i -= 1) {
             //If no equivalent state in QminusT
             let newState = this.findMinimizedState(this.tempStates[i]);
-            this.tempStates[i - 1].setTransition(newState, this.previousWord[i - 1], 0);
-            newState.inputLetters.add(this.previousWord[i - 1]);
+            this.tempStates[i - 1].setTransition(this.dictionaryOfStates, newState, this.previousWord[i - 1], 0);
         }
         this.startState = this.findMinimizedState(this.tempStates[0]);
         this.tempStates = [];
@@ -156,16 +155,23 @@ module.exports = class Transducer {
         let i;
         for (i = this.previousWord.length; i <= word.length; i += 1) { //+1
             //Ti WordI  copy of current Ti with word state
-            newState = currentState.copy(currentState.getNumberOfInputs() > 1);
+            let clone = currentState.getNumberOfInputs() > 1;
+            newState = currentState.copy(clone);
+            if (clone) {
+                // cloned the state -> should decreace numberOfInputs of both states;
+                // newState.numberOfInputs -= 1;
+                // newState.inputLetters.delete(word[i - 1]);
+                newState.numberOfInputs = 0;
+                newState.inputLetters.clear();
+                currentState.numberOfInputs -= 1;
+                currentState.inputLetters.delete(word[i - 1]);
+            }
             this.tempStates.push(newState);
             if (this.tempStates[i - 1]) {
-                this.tempStates[i - 1].setTransition(newState, word[i - 1], 0);
-                newState.inputLetters.add(word[i - 1]);
+                this.tempStates[i - 1].setTransition(this.dictionaryOfStates, newState, word[i - 1], 0);
             }
 
-            if (currentState.getNumberOfInputs() > 1) {
-                currentState.inputLetters.delete(word[i - 1]);
-            } else {
+            if (!clone) {
                 this.dictionaryOfStates.delete(currentState.hash());
             }
             let trans = newState.getTransition(word[i]);
@@ -198,7 +204,7 @@ module.exports = class Transducer {
             if (state.isFinal) {
                 let stateOutput = state.getOutput();
                 let stOut = stateOutput ? ':' + stateOutput : '';
-                output += `${state.id} [label="${state.id}${stOut}" fillcolor="red" shape=doublecircle]\n`;
+                output += `${state.id} [label="${state.id}${stOut}#${state.getNumberOfInputs()}" fillcolor="red" shape=doublecircle]\n`;
             }
             output += state.print();
 
@@ -265,8 +271,7 @@ module.exports = class Transducer {
         //minimizing the states of the last word
         for (let i = this.currentWord.length; i >= 1; i -= 1) {
             let newState = this.findMinimizedState(this.tempStates[i]);
-            this.tempStates[i - 1].setTransition(newState, this.previousWord[i - 1], 0);
-            newState.inputLetters.add(this.previousWord[i - 1]);
+            this.tempStates[i - 1].setTransition(this.dictionaryOfStates, newState, this.previousWord[i - 1], 0);
         }
         // this.reduceToMinimalExceptEpsilon('');
         //console.log('----------------------------7----------------------------');
@@ -307,15 +312,13 @@ module.exports = class Transducer {
         // set state transitions
         for (let i = this.previousWord.length; i > prefixLength; i -= 1) {
             let newState = this.findMinimizedState(this.tempStates[i]);
-            this.tempStates[i - 1].setTransition(newState, this.previousWord[i - 1], 0);
-            newState.inputLetters.add(this.previousWord[i - 1]);
+            this.tempStates[i - 1].setTransition(this.dictionaryOfStates, newState, this.previousWord[i - 1], 0);
         }
 
         // console.log('----------------------------2----------------------------');
         for (let i = prefixLength + 1; i <= this.currentWord.length; i += 1) {
             this.tempStates[i].clear();
-            this.tempStates[i - 1].setTransition(this.tempStates[i], this.currentWord[i - 1], 0);
-            this.tempStates[i].inputLetters.add(this.currentWord[i - 1]);
+            this.tempStates[i - 1].setTransition(this.dictionaryOfStates, this.tempStates[i], this.currentWord[i - 1], 0);
         }
 
 
@@ -370,6 +373,8 @@ module.exports = class Transducer {
         // console.log(`${this.currentWord} == ${this.previousWord}, pref=${prefixLength}`);
         if (this.currentWord == this.previousWord) {
             // console.log('.');
+            if (!this.tempStates[this.currentWord.length].isFinal)
+                this.tempStates[this.currentWord.length].isFinal = true;
             this.tempStates[this.currentWord.length].output.add(parseInt(this.currentOutput));
         } else {
             // console.log('....' + this.currentWord[prefixLength] + '   ' + this.currentOutput);
@@ -389,15 +394,15 @@ module.exports = class Transducer {
         var startTime = new Date();
         this.inputWordsCount += dictionary.length;
         this.previousWord = "";
-        let counter = 0;
+        let addCounter = 0;
 
         dictionary.forEach(pair => {
             this.increaseToMinimalExceptPrefix(pair.input);
             this.addWord(pair);
             this.reduceToMinimalExceptEpsilon();
-            counter += 1;
-            if ((counter % 1000) == 0)
-                console.log(counter);
+            addCounter += 1;
+            if ((addCounter % 100) == 0)
+                console.log(addCounter);
         });
 
         var endTime = new Date();
@@ -413,6 +418,11 @@ module.exports = class Transducer {
             return;
         }
         for (let i = this.tempStates.length - 1; i > 0; i -= 1) {
+            if (this.tempStates[i].isFinal) {
+                this.previousWord = this.currentWord.substr(0, i);
+                return;
+            }
+
             if (this.tempStates[i].transitions.size < 1)
                 this.tempStates[i - 1].removeTransition(this.currentWord[i - 1]);
 
@@ -440,7 +450,7 @@ module.exports = class Transducer {
             this.deleteWord(pair);
             this.reduceToMinimalExceptEpsilon();
             counter += 1;
-            if ((counter % 1000) == 0)
+            if ((counter % 100) == 0)
                 console.log(counter);
         });
 
@@ -452,7 +462,10 @@ module.exports = class Transducer {
     transducetoEnd(state, currentWord, currentLang) {
         if (state.isFinal)
             currentLang += currentWord + '\n';
-        state.transitions.forEach((t, char) => {
+
+        let trans = new Map([...state.transitions.entries()].sort());
+        // state.transitions
+        trans.forEach((t, char) => {
             let lang = ""
             if (t.next != null)
                 currentLang += this.transducetoEnd(t.next, currentWord + char, lang);
@@ -465,9 +478,36 @@ module.exports = class Transducer {
         let language = "";
         let currentWord = ""
 
-        currentState.transitions.forEach((t, char) => {
+        let trans = new Map([...currentState.transitions.entries()].sort());
+        // currentState.transitions
+        trans.forEach((t, char) => {
             let currentLang = ""
             language += this.transducetoEnd(t.next, currentWord + char, currentLang);
+        });
+        return language;
+    }
+
+    transducetoDebug(state, currentLang) {
+        let trans = new Map([...state.transitions.entries()].sort());
+        let finalSymbol = state.isFinal ? '(*)' : '*';
+        // state.transitions
+        trans.forEach((t, char) => {
+            let lang = `${finalSymbol} -> * [label="${char}#${t.next.transitions.size}"]\n`;
+            if (t.next != null)
+                currentLang += this.transducetoDebug(t.next, lang);
+        });
+        return currentLang;
+    }
+
+    debugStates() {
+        let currentState = this.startState;
+        let language = "";
+        let finalSymbol = currentState.isFinal ? '(**)' : '**';
+        let trans = new Map([...currentState.transitions.entries()].sort());
+        // currentState.transitions
+        trans.forEach((t, char) => {
+            let currentLang = `${finalSymbol} -> ** [label="${char}#${t.next.transitions.size}"]\n`;
+            language += this.transducetoDebug(t.next, currentLang);
         });
         return language;
     }

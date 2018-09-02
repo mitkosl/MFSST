@@ -45,17 +45,22 @@ function main() {
 
 
     // var transducer = new Transducer();
-    // const file = "./data/data2.dat"; //"./data/2k.dat";
-    // const file2 = "./data/data3.dat"; //"./data/2k.dat";
+    // const file = "./data/q"; //"./data/2k.dat";
+    // const file2 = "./data/qAdd"; //"./data/2k.dat";
     // helpers.readFile(file)
     //     .then((dict) => {
     //         transducer = new Transducer(dict);
     //         transducer.print();
     //         helpers.readFile(file2)
+    //             //helpers.readFileSingle(file2)
     //             .then(dict2 => {
-    //                 // transducer.lookup(dict2);
+    //                 ///transducer.lookup(dict2);
     //                 transducer.addWords(dict2);
     //                 transducer.print();
+    //                 // transducer.lookupWord("aa");
+    //                 // transducer.lookupWord("aaaaaaa");
+    //                 // transducer.lookupWord("aaartali");
+    //                 // transducer.generateGraph();
     //             })
     //     });
 
@@ -221,6 +226,19 @@ function processCommands(d) {
                     let outFile = 'output/' + commands[1];
                     helpers.writeFile(language, outFile);
                     console.log('Saved Transducer language to file ' + commands[1]);
+                }
+            }
+            break;
+        case '12':
+            {
+                console.log("Printing debug states...");
+                let debug = transducer.debugStates();
+                if (commands.length < 2) {
+                    console.log(debug);
+                } else {
+                    let outFile = 'output/' + commands[1];
+                    helpers.writeFile(debug, outFile);
+                    console.log('Saved Transducer debug states to file ' + commands[1]);
                 }
             }
             break;

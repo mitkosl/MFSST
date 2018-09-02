@@ -10,7 +10,7 @@ const incr = (function () {
 })();
 
 const incrId = (function () {
-    var i = 100;
+    var i = -1;
 
     return function () {
         return i += 1;
@@ -19,8 +19,9 @@ const incrId = (function () {
 
 module.exports = class State {
     constructor(isFinal = false, output = []) {
-        this.id = incr();
+        this.id = incrId();
         this.isFinal = isFinal;
+        this.numberOfInputs = 0;
         this.inputLetters = new Set();
         this.output = new Set(output);
         this.transitions = new Map();
@@ -60,6 +61,7 @@ module.exports = class State {
             id: this.id,
             isFinal: this.isFinal,
             inputLetters: inputLetters,
+            numberOfInputs: this.numberOfInputs,
             output: outputArr,
             transitions: transitionsArr,
         }
@@ -71,6 +73,7 @@ module.exports = class State {
         this.isFinal = state.isFinal;
         this.output = new Set(state.output);
         this.inputLetters = new Set(state.inputLetters);
+        this.numberOfInputs = state.numberOfInputs;
         this.transitions = new Map();
         state.transitions.forEach(trans => {
 
@@ -86,12 +89,53 @@ module.exports = class State {
         });
     }
 
-    setTransition(next, input, output = 0) {
+    setTransition(dictionaryOfStates, next, input, output = 0, shoultIncrement = true) {
         //console.log('State #' + this.id + ' => new Transition(' + input + ':' + output + ', next #' + next.id + ')');
-        let trans = this.transitions.get(input)
+        let equivalentToThis = null;
+        let trans = this.transitions.get(input);
         if (trans && trans.output && output == 0)
             output = trans.output;
+        if (shoultIncrement) { // || (shoultIncrement && trans && trans.next.id != next.id))  
+            if (trans) {
+                if (trans.next.id == next.id) {
+                    next.numberOfInputs = trans.next.numberOfInputs;
+                } else {
+                    if (!next.inputLetters.has(input))
+                        next.numberOfInputs += 1;
+                    else {
+                        if (dictionaryOfStates) {
+                            var m = this.copy();
+                            m.transitions.set(input, new Transition(output, next));
+                            equivalentToThis = dictionaryOfStates.get(m.hash());
+                        }
+
+                        if (!equivalentToThis)
+                            next.numberOfInputs += 1;
+                        else
+                        if (equivalentToThis && next.inputLetters.has(`${equivalentToThis.id}${input}`)) {}
+                        // do nothing
+                    }
+                }
+            } else {
+                //if (!next.inputLetters.has(input))
+                next.numberOfInputs += 1;
+            }
+
+            // if (next.inputLetters.has(input) && trans) {
+            //     if (trans.next.id == next.id) {
+            //         next.numberOfInputs = trans.next.numberOfInputs;
+            //     } else {
+            //         // if(trans)
+            //         next.numberOfInputs += 1;
+            //     }
+            // } else {
+            //     if (!next.inputLetters.has(input))
+            //         next.numberOfInputs += 1;
+            // }
+        }
         next.inputLetters.add(input);
+        let id = equivalentToThis ? equivalentToThis.id : this.id;
+        next.inputLetters.add(`${id}${input}`);
         this.transitions.set(input, new Transition(output, next));
     }
 
@@ -101,7 +145,7 @@ module.exports = class State {
     }
 
     getNumberOfInputs() {
-        return this.inputLetters.size;
+        return this.numberOfInputs;
     }
 
     removeTransition(input) {
@@ -122,20 +166,20 @@ module.exports = class State {
         this.transitions.forEach((transition, input) => {
             let transitionOutput = transition.output;
             let trOut = transitionOutput ? ':' + transitionOutput : '';
-            res += `${this.id} -> ${transition.next.id} [label="${input}${trOut}"]\n`;
+            res += `${this.id} -> ${transition.next.id} [label="${input}${trOut}#${this.numberOfInputs}"]\n`;
         });
-        return res;
+        return res; //`${this.id}#${this.numberOfInputs}\n` + res;
     }
 
     copy(cloneNewId = false) {
         let s = new State(this.isFinal);
-        // s.id = incrId();
         if (!cloneNewId)
             s.id = this.id;
         // console.log('Copy of State #' + this.id + ' into state # ' + s.id, this.isFinal, s.isFinal);
-        this.transitions.forEach((val, key) => s.setTransition(val.next, key, val.output));
+        this.transitions.forEach((val, key) => s.setTransition(null, val.next, key, val.output, cloneNewId));
         this.output.forEach((val) => s.output.add(val));
         this.inputLetters.forEach((val) => s.inputLetters.add(val));
+        s.numberOfInputs = cloneNewId ? this.numberOfInputs : 0;
         return s;
     }
 
@@ -144,6 +188,7 @@ module.exports = class State {
         this.isFinal = false;
         this.output.clear();
         this.inputLetters.clear();
+        this.numberOfInputs = 0;
         this.transitions.clear();
     }
 };
