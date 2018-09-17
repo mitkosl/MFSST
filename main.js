@@ -45,17 +45,19 @@ function main() {
 
 
     // var transducer = new Transducer();
-    // const file = "./data/q"; //"./data/2k.dat";
-    // const file2 = "./data/qAdd"; //"./data/2k.dat";
+    // const file = "./data/t11"; //"./data/2k.dat";
+    // const file2 = "./data/t1"; //"./data/2k.dat";
     // helpers.readFile(file)
     //     .then((dict) => {
     //         transducer = new Transducer(dict);
     //         transducer.print();
+    //         // transducer.generateGraph();
+    //         // console.log(transducer.debugStates());
     //         helpers.readFile(file2)
-    //             //helpers.readFileSingle(file2)
+    //             // helpers.readFileSingle(file2)
     //             .then(dict2 => {
     //                 ///transducer.lookup(dict2);
-    //                 transducer.addWords(dict2);
+    //                 transducer.deleteWords(dict2);
     //                 transducer.print();
     //                 // transducer.lookupWord("aa");
     //                 // transducer.lookupWord("aaaaaaa");
@@ -240,6 +242,27 @@ function processCommands(d) {
                     helpers.writeFile(debug, outFile);
                     console.log('Saved Transducer debug states to file ' + commands[1]);
                 }
+
+                // transducer.dictionaryOfStates.forEach(st => {
+                //     console.log(st.print());
+                // })
+            }
+            break;
+        case '13':
+            {
+                console.log("Printing debug states...");
+                let debug = transducer.debugInputStates();
+                if (commands.length < 2) {
+                    console.log(debug);
+                } else {
+                    let outFile = 'output/' + commands[1];
+                    helpers.writeFile(debug, outFile);
+                    console.log('Saved Transducer input states debug to file ' + commands[1]);
+                }
+
+                // transducer.dictionaryOfStates.forEach(st => {
+                //     console.log(st.print());
+                // })
             }
             break;
             // Menu
