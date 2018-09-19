@@ -144,7 +144,7 @@ module.exports = class State {
         //     }
         // } else {
         //     //if (!next.inputLetters.has(input))
-        next.numberOfInputs += 1;
+        // next.numberOfInputs += 1;
         //}
 
         // // if (next.inputLetters.has(input) && trans) {
@@ -170,8 +170,12 @@ module.exports = class State {
         return this.transitions.get(input);
     }
 
-    getNumberOfInputs() {
+    getNumberOfPrefixes() {
         return this.prefixes;
+    }
+
+    getNumberOfInputs() {
+        return this.numberOfInputs;
     }
 
     removeTransition(input) {
@@ -192,7 +196,7 @@ module.exports = class State {
         this.transitions.forEach((transition, input) => {
             let transitionOutput = transition.output;
             let trOut = transitionOutput ? ':' + transitionOutput : '';
-            res += `${this.id} -> ${transition.next.id} [label="${input}${trOut}#${this.prefixes}"]\n`;
+            res += `${this.id} -> ${transition.next.id} [label="${input}${trOut}#${this.numberOfInputs}"]\n`;
         });
         return res; //`${this.id}#${this.numberOfInputs}\n` + res;
     }

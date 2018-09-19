@@ -126,11 +126,20 @@ module.exports = class Transducer {
 
         for (let i = this.previousWord.length; i >= 1; i -= 1) {
             //If no equivalent state in QminusT
+            let alreadiInDictionary = this.dictionaryOfStates.has(this.tempStates[i].hash());
             let newState = this.findMinimizedState(this.tempStates[i]);
             newState.prefixes += 1;
+            if (!alreadiInDictionary) {
+                newState.transitions.forEach((tr, ch) => {
+                    tr.next.numberOfInputs += 1;
+                });
+            }
             this.tempStates[i - 1].setTransition(this.dictionaryOfStates, newState, this.previousWord[i - 1], 0);
         }
         this.startState = this.findMinimizedState(this.tempStates[0]);
+        this.startState.transitions.forEach((tr, ch) => {
+            tr.next.numberOfInputs += 1;
+        });
         this.tempStates = [];
         this.previousWord = word;
     }
@@ -144,8 +153,14 @@ module.exports = class Transducer {
             // if (this.dictionaryOfStates.has(this.tempStates[i].hash()) && this.tempStates[i].transitions.size > 0) {
             //     shouldDecrement = true;
             // }
+            let alreadiInDictionary = this.dictionaryOfStates.has(this.tempStates[i].hash());
             let newState = this.findMinimizedState(this.tempStates[i]);
             newState.prefixes += 1;
+            if (!alreadiInDictionary) {
+                newState.transitions.forEach((tr, ch) => {
+                    tr.next.numberOfInputs += 1;
+                });
+            }
             // if (shouldDecrement) {
             //     newState.transitions.forEach((tr, ch) => {
             //         tr.next.numberOfInputs -= 1;
@@ -159,6 +174,9 @@ module.exports = class Transducer {
             this.tempStates[i - 1].setTransition(this.dictionaryOfStates, newState, this.previousWord[i - 1], 0);
         }
         this.startState = this.findMinimizedState(this.tempStates[0]);
+        this.startState.transitions.forEach((tr, ch) => {
+            tr.next.numberOfInputs += 1;
+        });
         this.tempStates = [];
         this.previousWord = "";
     }
@@ -170,17 +188,24 @@ module.exports = class Transducer {
         }
         let newState = null;
         let i;
+        let shouldClone = false;
         for (i = this.previousWord.length; i <= word.length; i += 1) { //+1
             //Ti WordI  copy of current Ti with word state
-            let clone = currentState.getNumberOfInputs() > 1;
+            let clone = false;
+
+            if (isDelete)
+                clone = currentState.getNumberOfInputs() > 0;
+            else
+                clone = currentState.getNumberOfPrefixes() > 1;
             newState = currentState.copy(clone);
-            if (clone) {
+            if (clone || shouldClone) {
+                shouldClone = true;
                 // cloned the state -> should decreace numberOfInputs of both states;
                 // newState.numberOfInputs -= 1;
                 // newState.inputLetters.delete(word[i - 1]);
                 newState.numberOfInputs = 0;
                 //newState.inputLetters.clear();
-                currentState.numberOfInputs -= 1;
+                //currentState.numberOfInputs -= 1;
                 currentState.prefixes -= 1;
                 // if (isDelete && i == word.length)
                 //     currentState.isFinal = false;
@@ -193,7 +218,10 @@ module.exports = class Transducer {
                 this.tempStates[i - 1].setTransition(this.dictionaryOfStates, newState, word[i - 1], 0);
             }
 
-            if (!clone) {
+            if (!clone && !shouldClone) {
+                currentState.transitions.forEach((tr, ch) => {
+                    tr.next.numberOfInputs -= 1;
+                });
                 this.dictionaryOfStates.delete(currentState.hash());
             }
             let trans = newState.getTransition(word[i]);
@@ -297,8 +325,14 @@ module.exports = class Transducer {
             // if (this.dictionaryOfStates.has(this.tempStates[i].hash()) && this.tempStates[i].transitions.size > 0) {
             //     shouldDecrement = true;
             // }
+            let alreadiInDictionary = this.dictionaryOfStates.has(this.tempStates[i].hash());
             let newState = this.findMinimizedState(this.tempStates[i]);
             newState.prefixes += 1;
+            if (!alreadiInDictionary) {
+                newState.transitions.forEach((tr, ch) => {
+                    tr.next.numberOfInputs += 1;
+                });
+            }
             // if (shouldDecrement) {
             //     newState.transitions.forEach((tr, ch) => {
             //         tr.next.numberOfInputs -= 1;
@@ -314,6 +348,9 @@ module.exports = class Transducer {
         // this.reduceToMinimalExceptEpsilon('');
         //console.log('----------------------------7----------------------------');
         this.startState = this.findMinimizedState(this.tempStates[0]);
+        this.startState.transitions.forEach((tr, ch) => {
+            tr.next.numberOfInputs += 1;
+        });
         this.tempStates = [];
 
         let tempAlphabet = [];
@@ -353,8 +390,14 @@ module.exports = class Transducer {
             //  && this.tempStates[i].transitions.size > 0) {
             //     shouldDecrement = true;
             // }
+            let alreadiInDictionary = this.dictionaryOfStates.has(this.tempStates[i].hash());
             let newState = this.findMinimizedState(this.tempStates[i]);
             newState.prefixes += 1;
+            if (!alreadiInDictionary) {
+                newState.transitions.forEach((tr, ch) => {
+                    tr.next.numberOfInputs += 1;
+                });
+            }
             // if (shouldDecrement) {
             //     newState.transitions.forEach((tr, ch) => {
             //         tr.next.numberOfInputs -= 1;
@@ -468,23 +511,52 @@ module.exports = class Transducer {
         this.currentWord = pair.input;
         this.currentOutput = pair.output;
         this.tempStates[this.tempStates.length - 1].isFinal = false;
-        if (this.tempStates[this.tempStates.length - 1].transitions.size > 0) {
-            return;
-        }
+        this.tempStates[this.tempStates.length - 1].output.clear()
+
         for (let i = this.tempStates.length - 1; i > 0; i -= 1) {
             if (this.tempStates[i].isFinal) {
                 this.previousWord = this.currentWord.substr(0, i);
-                return;
+                break;
             }
-
-            if (this.tempStates[i].transitions.size < 1)
-                this.tempStates[i - 1].removeTransition(this.currentWord[i - 1]);
 
             if (this.tempStates[i].transitions.size > 0) {
                 this.previousWord = this.currentWord.substr(0, i);
-                return;
+                break;
             } else {
+                this.tempStates[i - 1].removeTransition(this.currentWord[i - 1]);
                 this.tempStates.pop();
+            }
+        }
+
+        let flag = false;
+        for (let i = this.tempStates.length - 1; i > 0; i -= 1) {
+            let minOutput = Infinity;
+            // let trans = this.tempStates[i].getTransition(pair.input[i]);
+            // if (trans)
+            //     minOutput = parseInt(trans.output);
+
+            if (this.tempStates[i].isFinal) {
+                this.tempStates[i].output.forEach(out => {
+                    minOutput = parseInt(out);
+                });
+                minOutput = isNaN(minOutput) || minOutput == Infinity ? 0 : minOutput;
+            }
+            this.tempStates[i].transitions.forEach((tr, ch) => {
+                minOutput = parseInt(Math.min(tr.output, minOutput));
+            });
+
+            if (flag && minOutput == 0)
+                return;
+            if (minOutput > 0 && minOutput !== Infinity) {
+                flag = true;
+                this.tempStates[i - 1].getTransition(pair.input[i - 1]).output += parseInt(minOutput);
+
+                this.tempStates[i].transitions.forEach((tr, ch) => {
+                    tr.output -= parseInt(minOutput);
+                });
+                this.tempStates[i].output.forEach(out => {
+                    out -= parseInt(minOutput);
+                });
             }
         }
     }
